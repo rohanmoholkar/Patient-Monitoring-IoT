@@ -3,670 +3,1385 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Patient Monitoring Analytics | IoT Dashboard</title>
+    <title>VitalEdge — Patient Monitoring Dashboard</title>
     <meta name="description" content="Real-time IoT patient monitoring dashboard with edge AI vision analytics">
 
     <!-- Socket.IO Client -->
     <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
 
-    <!-- FontAwesome for Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
     <style>
+        /* ═══════════════ DESIGN TOKENS ═══════════════ */
         :root {
-            --bg-color: #080c18;
-            --bg-gradient: linear-gradient(135deg, #080c18 0%, #0d1528 50%, #111b33 100%);
-            --surface-color: rgba(22, 33, 62, 0.6);
-            --surface-border: rgba(59, 130, 246, 0.08);
-            --text-primary: #f0f4ff;
-            --text-secondary: #7a8bb5;
-            --text-muted: #4a5578;
-            --accent-blue: #3b82f6;
-            --accent-cyan: #06b6d4;
-            --accent-green: #10b981;
-            --accent-red: #ef4444;
-            --accent-orange: #f59e0b;
-            --accent-purple: #8b5cf6;
-            --glass-border: rgba(100, 150, 255, 0.1);
-            --glow-blue: 0 0 20px rgba(59, 130, 246, 0.15);
+            --bg: #f4f6fb;
+            --white: #ffffff;
+            --text-dark: #1a1d2e;
+            --text-mid: #5a6178;
+            --text-light: #9ca3bd;
+            --blue: #2563eb;
+            --blue-light: #dbeafe;
+            --blue-bg: #eff6ff;
+            --green: #16a34a;
+            --green-light: #dcfce7;
+            --red: #dc2626;
+            --red-light: #fee2e2;
+            --orange: #ea580c;
+            --orange-light: #fff7ed;
+            --cyan: #0891b2;
+            --cyan-light: #e0f7fa;
+            --purple: #7c3aed;
+            --purple-light: #ede9fe;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03);
+            --shadow-md: 0 4px 14px rgba(0,0,0,0.06);
+            --shadow-lg: 0 10px 30px rgba(0,0,0,0.08);
+            --radius: 16px;
+            --radius-sm: 12px;
+            --radius-xs: 8px;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--bg-gradient);
-            color: var(--text-primary);
+            background: var(--bg);
+            color: var(--text-dark);
             min-height: 100vh;
-            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
         }
 
-        body::before {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background-image:
-                linear-gradient(rgba(59, 130, 246, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(59, 130, 246, 0.03) 1px, transparent 1px);
-            background-size: 60px 60px;
-            pointer-events: none;
-            z-index: 0;
+        /* ═══════════════ TOP NAVBAR ═══════════════ */
+        .topbar {
+            background: var(--white);
+            border-bottom: 1px solid #e8ebf2;
+            padding: 0 2.5rem;
+            height: 68px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow-sm);
         }
 
-        .dashboard-container {
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 2.5rem;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            width: 38px;
+            height: 38px;
+            background: linear-gradient(135deg, var(--blue), #6366f1);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.1rem;
+        }
+
+        .logo-text {
+            font-weight: 800;
+            font-size: 1.25rem;
+            color: var(--text-dark);
+            letter-spacing: -0.3px;
+        }
+
+        .topbar-nav {
+            display: flex;
+            gap: 0.25rem;
+        }
+
+        .topbar-nav a {
+            text-decoration: none;
+            color: var(--text-mid);
+            font-weight: 500;
+            font-size: 0.88rem;
+            padding: 0.5rem 1rem;
+            border-radius: var(--radius-xs);
+            transition: all 0.2s ease;
+        }
+
+        .topbar-nav a:hover { color: var(--blue); background: var(--blue-light); }
+        .topbar-nav a.active { color: var(--blue); background: var(--blue-light); font-weight: 600; }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .search-box {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--bg);
+            border: 1px solid #e8ebf2;
+            border-radius: 10px;
+            padding: 0.5rem 1rem;
+            min-width: 240px;
+            transition: border-color 0.2s;
+        }
+
+        .search-box:focus-within { border-color: var(--blue); }
+
+        .search-box i { color: var(--text-light); font-size: 0.85rem; }
+
+        .search-box input {
+            border: none;
+            background: none;
+            outline: none;
+            font-family: inherit;
+            font-size: 0.85rem;
+            color: var(--text-dark);
+            width: 100%;
+        }
+
+        .search-box input::placeholder { color: var(--text-light); }
+
+        .topbar-icon-btn {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            border: 1px solid #e8ebf2;
+            background: var(--white);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-mid);
+            cursor: pointer;
+            transition: all 0.2s;
             position: relative;
-            z-index: 1;
-            max-width: 1400px;
+        }
+
+        .topbar-icon-btn:hover { background: var(--bg); color: var(--blue); }
+
+        .notification-dot {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            width: 8px;
+            height: 8px;
+            background: var(--red);
+            border-radius: 50%;
+            border: 2px solid var(--white);
+        }
+
+        .user-pill {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 4px 12px 4px 4px;
+            border-radius: 30px;
+            background: var(--bg);
+            cursor: pointer;
+            transition: box-shadow 0.2s;
+        }
+
+        .user-pill:hover { box-shadow: var(--shadow-md); }
+
+        .user-pill img {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .user-pill span {
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: var(--text-dark);
+        }
+
+        /* ═══════════════ CONNECTION STATUS ═══════════════ */
+        .conn-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.3rem 0.85rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .conn-badge.connecting {
+            background: var(--orange-light);
+            color: var(--orange);
+        }
+
+        .conn-badge.connected {
+            background: var(--green-light);
+            color: var(--green);
+            animation: softPulse 2.5s infinite;
+        }
+
+        .conn-badge.disconnected {
+            background: var(--red-light);
+            color: var(--red);
+        }
+
+        @keyframes softPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.2); }
+            50% { box-shadow: 0 0 0 5px rgba(22, 163, 74, 0); }
+        }
+
+        /* ═══════════════ MAIN LAYOUT ═══════════════ */
+        .main-content {
+            max-width: 1380px;
             margin: 0 auto;
             padding: 2rem 2.5rem;
         }
 
-        /* ---- HEADER ---- */
-        header {
+        /* ═══════════════ WELCOME SECTION ═══════════════ */
+        .welcome-row {
             display: flex;
             justify-content: space-between;
-            align-items: flex-start;
+            align-items: flex-end;
             margin-bottom: 2rem;
-            padding-bottom: 1.5rem;
-            border-bottom: 1px solid var(--glass-border);
         }
 
-        .header-left h1 {
-            font-weight: 800;
+        .welcome-text h1 {
             font-size: 2rem;
+            font-weight: 800;
+            color: var(--text-dark);
             letter-spacing: -0.5px;
-            background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 40%, #8b5cf6 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 0.4rem;
+            line-height: 1.2;
         }
 
-        .header-left .subtitle {
-            color: var(--text-secondary);
+        .welcome-text h1 span { color: var(--blue); }
+
+        .welcome-text p {
+            color: var(--text-mid);
             font-size: 0.95rem;
+            margin-top: 0.3rem;
         }
 
-        .header-right {
+        .welcome-meta {
+            display: flex;
+            align-items: center;
+            gap: 1.2rem;
+        }
+
+        .meta-chip {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.45rem 0.9rem;
+            border-radius: 10px;
+            background: var(--white);
+            border: 1px solid #e8ebf2;
+            font-size: 0.82rem;
+            color: var(--text-mid);
+            font-weight: 500;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .meta-chip i { color: var(--blue); }
+
+        /* ═══════════════ 3-COLUMN GRID ═══════════════ */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 220px 1fr 300px;
+            gap: 1.5rem;
+        }
+
+        /* ═══════════════ LEFT COLUMN — VITALS ═══════════════ */
+        .vitals-col {
             display: flex;
             flex-direction: column;
-            align-items: flex-end;
-            gap: 0.5rem;
+            gap: 1rem;
         }
 
-        .status-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.35rem 1rem;
-            border-radius: 9999px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            backdrop-filter: blur(8px);
-            transition: all 0.4s ease;
-        }
-
-        .status-badge.connecting {
-            background: rgba(245, 158, 11, 0.15);
-            color: var(--accent-orange);
-            border: 1px solid rgba(245, 158, 11, 0.2);
-        }
-
-        .status-badge.connected {
-            background: rgba(16, 185, 129, 0.15);
-            color: var(--accent-green);
-            border: 1px solid rgba(16, 185, 129, 0.2);
-            animation: pulse-green 2s infinite;
-        }
-
-        .status-badge.disconnected {
-            background: rgba(239, 68, 68, 0.15);
-            color: var(--accent-red);
-            border: 1px solid rgba(239, 68, 68, 0.2);
-        }
-
-        @keyframes pulse-green {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.3); }
-            50% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
-        }
-
-        .live-clock {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            font-weight: 500;
-            font-variant-numeric: tabular-nums;
-        }
-
-        /* ---- GRID ---- */
-        .grid-main {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 1.25rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .grid-charts {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1.25rem;
-            margin-bottom: 1.5rem;
-        }
-
-        /* ---- CARDS ---- */
-        .card {
-            background: var(--surface-color);
-            border: 1px solid var(--surface-border);
-            border-radius: 1rem;
-            padding: 1.5rem;
-            backdrop-filter: blur(12px);
-            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        .vital-card {
+            background: var(--white);
+            border-radius: var(--radius);
+            padding: 1.25rem;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid #eef1f6;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             overflow: hidden;
         }
 
-        .card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, var(--accent-blue), transparent);
-            opacity: 0;
-            transition: opacity 0.35s ease;
+        .vital-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
         }
 
-        .card:hover {
-            transform: translateY(-3px);
-            border-color: rgba(59, 130, 246, 0.15);
-            box-shadow: var(--glow-blue);
+        .vital-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.7rem;
         }
 
-        .card:hover::before { opacity: 1; }
-
-        .card-icon {
-            width: 42px;
-            height: 42px;
-            border-radius: 12px;
+        .vital-icon {
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.1rem;
+            font-size: 0.9rem;
+        }
+
+        .vital-icon.heart { background: var(--red-light); color: var(--red); }
+        .vital-icon.temp { background: var(--orange-light); color: var(--orange); }
+        .vital-icon.spo2 { background: var(--cyan-light); color: var(--cyan); }
+        .vital-icon.activity { background: var(--purple-light); color: var(--purple); }
+        .vital-icon.light { background: var(--blue-light); color: var(--blue); }
+
+        .vital-menu {
+            color: var(--text-light);
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        .vital-label {
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--text-light);
+            margin-bottom: 0.2rem;
+        }
+
+        .vital-value {
+            font-size: 1.85rem;
+            font-weight: 800;
+            color: var(--text-dark);
+            line-height: 1.15;
+            font-variant-numeric: tabular-nums;
+            transition: color 0.3s;
+        }
+
+        .vital-unit {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-mid);
+        }
+
+        .vital-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.2rem 0.55rem;
+            border-radius: 6px;
+            font-size: 0.68rem;
+            font-weight: 700;
+            margin-top: 0.45rem;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .vital-badge.good { background: var(--green-light); color: var(--green); }
+        .vital-badge.alert { background: var(--red-light); color: var(--red); }
+        .vital-badge.warning { background: var(--orange-light); color: var(--orange); }
+        .vital-badge.info { background: var(--blue-light); color: var(--blue); }
+
+        /* ═══════════════ CENTER COLUMN ═══════════════ */
+        .center-col {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .chart-panel {
+            background: var(--white);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid #eef1f6;
+        }
+
+        .chart-panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 1rem;
         }
 
-        .card-icon.blue { background: rgba(59, 130, 246, 0.15); color: var(--accent-blue); }
-        .card-icon.green { background: rgba(16, 185, 129, 0.15); color: var(--accent-green); }
-        .card-icon.red { background: rgba(239, 68, 68, 0.15); color: var(--accent-red); }
-        .card-icon.orange { background: rgba(245, 158, 11, 0.15); color: var(--accent-orange); }
-        .card-icon.cyan { background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); }
-        .card-icon.purple { background: rgba(139, 92, 246, 0.15); color: var(--accent-purple); }
+        .chart-panel-header h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-dark);
+        }
 
-        .card-label {
+        .chart-tabs {
+            display: flex;
+            gap: 0.25rem;
+            background: var(--bg);
+            padding: 3px;
+            border-radius: 8px;
+        }
+
+        .chart-tab {
+            padding: 0.35rem 0.8rem;
+            border-radius: 6px;
             font-size: 0.75rem;
             font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-            color: var(--text-muted);
-            margin-bottom: 0.6rem;
+            border: none;
+            cursor: pointer;
+            background: none;
+            color: var(--text-mid);
+            transition: all 0.2s;
         }
 
-        .card-value {
-            font-size: 2.2rem;
-            font-weight: 700;
-            line-height: 1;
-            margin-bottom: 0.3rem;
-            font-variant-numeric: tabular-nums;
-            transition: color 0.3s ease;
+        .chart-tab.active { background: var(--white); color: var(--blue); box-shadow: var(--shadow-sm); }
+
+        .chart-container { height: 210px; position: relative; }
+
+        /* Cardiovascular Section */
+        .cardio-section {
+            background: var(--white);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid #eef1f6;
         }
 
-        .card-unit {
+        .cardio-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .cardio-header h3 {
             font-size: 1rem;
-            font-weight: 400;
-            color: var(--text-secondary);
-            margin-left: 4px;
-        }
-
-        .card-status {
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            margin-top: 0.5rem;
+            font-weight: 700;
             display: flex;
             align-items: center;
-            gap: 0.4rem;
+            gap: 0.5rem;
         }
 
-        .status-dot {
-            width: 6px;
-            height: 6px;
+        .cardio-body {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+        }
+
+        .cardio-text {
+            flex: 1;
+            font-size: 0.85rem;
+            color: var(--text-mid);
+            line-height: 1.6;
+        }
+
+        .cardio-bpm {
+            text-align: center;
+            padding: 1rem 1.5rem;
+            background: var(--bg);
+            border-radius: var(--radius-sm);
+            min-width: 130px;
+        }
+
+        .cardio-bpm .bpm-value {
+            font-size: 2.8rem;
+            font-weight: 900;
+            color: var(--text-dark);
+            line-height: 1;
+        }
+
+        .cardio-bpm .bpm-change {
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-top: 0.3rem;
+        }
+
+        .cardio-bpm .bpm-label {
+            font-size: 0.75rem;
+            color: var(--text-light);
+            margin-top: 0.15rem;
+        }
+
+        /* Event Feed */
+        .event-feed {
+            background: var(--white);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid #eef1f6;
+        }
+
+        .event-feed h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .event-list {
+            max-height: 180px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+        }
+
+        .event-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            padding: 0.7rem 0;
+            border-bottom: 1px solid #f1f3f8;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .event-dot {
+            width: 10px;
+            height: 10px;
             border-radius: 50%;
-            display: inline-block;
+            margin-top: 4px;
             flex-shrink: 0;
         }
 
-        .status-dot.green { background: var(--accent-green); box-shadow: 0 0 6px var(--accent-green); }
-        .status-dot.red { background: var(--accent-red); box-shadow: 0 0 6px var(--accent-red); }
-        .status-dot.orange { background: var(--accent-orange); box-shadow: 0 0 6px var(--accent-orange); }
+        .event-dot.alert-dot { background: var(--red); box-shadow: 0 0 8px rgba(220, 38, 38, 0.3); }
+        .event-dot.info-dot { background: var(--blue); }
+        .event-dot.success-dot { background: var(--green); }
 
-        .val-green { color: var(--accent-green); }
-        .val-red { color: var(--accent-red); }
-        .val-orange { color: var(--accent-orange); }
-        .val-blue { color: var(--accent-blue); }
-        .val-cyan { color: var(--accent-cyan); }
-        .val-white { color: var(--text-primary); }
+        .event-content { flex: 1; }
 
-        /* ---- ALERT CARD ---- */
-        .alert-card.critical {
-            border-color: rgba(239, 68, 68, 0.4) !important;
-            background: rgba(239, 68, 68, 0.08) !important;
-            animation: alert-flash 1s infinite alternate;
-        }
-
-        .alert-card.critical::before {
-            opacity: 1 !important;
-            background: linear-gradient(90deg, transparent, var(--accent-red), transparent) !important;
-        }
-
-        @keyframes alert-flash {
-            from { box-shadow: 0 0 10px rgba(239, 68, 68, 0.1); }
-            to { box-shadow: 0 0 40px rgba(239, 68, 68, 0.3); }
-        }
-
-        /* ---- CHART CARDS ---- */
-        .chart-card {
-            background: var(--surface-color);
-            border: 1px solid var(--surface-border);
-            border-radius: 1rem;
-            padding: 1.5rem;
-            backdrop-filter: blur(12px);
-        }
-
-        .chart-card h3 {
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: var(--text-secondary);
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .chart-container { position: relative; height: 200px; }
-
-        /* ---- EVENT LOG ---- */
-        .log-section {
-            background: var(--surface-color);
-            border: 1px solid var(--surface-border);
-            border-radius: 1rem;
-            padding: 1.5rem;
-            backdrop-filter: blur(12px);
-        }
-
-        .log-section h3 {
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: var(--text-secondary);
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .log-entries {
-            max-height: 160px;
-            overflow-y: auto;
-            scrollbar-width: thin;
-            scrollbar-color: rgba(59, 130, 246, 0.2) transparent;
-        }
-
-        .log-entry {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 0.6rem 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        .event-msg {
             font-size: 0.82rem;
-            animation: fadeIn 0.3s ease;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateX(-10px); }
-            to { opacity: 1; transform: translateX(0); }
-        }
-
-        .log-entry .log-time {
-            color: var(--text-muted);
-            font-variant-numeric: tabular-nums;
-            min-width: 70px;
+            color: var(--text-dark);
             font-weight: 500;
         }
 
-        .log-entry .log-icon {
-            width: 24px;
-            height: 24px;
-            border-radius: 6px;
+        .event-time {
+            font-size: 0.72rem;
+            color: var(--text-light);
+            margin-top: 0.15rem;
+        }
+
+        /* ═══════════════ RIGHT COLUMN ═══════════════ */
+        .right-col {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        /* Fall Detection Card */
+        .fall-card {
+            background: var(--white);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid #eef1f6;
+            text-align: center;
+            transition: all 0.4s ease;
+        }
+
+        .fall-card.critical {
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+            border-color: rgba(220, 38, 38, 0.3);
+            animation: alertPulse 1.5s infinite alternate;
+        }
+
+        @keyframes alertPulse {
+            from { box-shadow: 0 0 10px rgba(220, 38, 38, 0.1); }
+            to { box-shadow: 0 0 25px rgba(220, 38, 38, 0.25); }
+        }
+
+        .fall-shield {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
+            margin: 0 auto 0.8rem;
+            font-size: 1.4rem;
+            transition: all 0.3s;
+        }
+
+        .fall-shield.safe { background: var(--green-light); color: var(--green); }
+        .fall-shield.danger { background: var(--red-light); color: var(--red); animation: shake 0.5s infinite; }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-3px); }
+            75% { transform: translateX(3px); }
+        }
+
+        .fall-status {
+            font-size: 1.3rem;
+            font-weight: 800;
+            margin-bottom: 0.3rem;
+            transition: color 0.3s;
+        }
+
+        .fall-sub {
+            font-size: 0.8rem;
+            color: var(--text-mid);
+        }
+
+        /* Patient Card */
+        .patient-card {
+            background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .patient-card::before {
+            content: '';
+            position: absolute;
+            top: -40px;
+            right: -40px;
+            width: 130px;
+            height: 130px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.08);
+        }
+
+        .patient-card-header {
             font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.7;
+            margin-bottom: 1rem;
         }
 
-        .log-entry .log-msg { color: var(--text-secondary); }
+        .patient-info {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            margin-bottom: 1rem;
+        }
 
-        .log-entry.log-alert .log-icon { background: rgba(239, 68, 68, 0.15); color: var(--accent-red); }
-        .log-entry.log-info .log-icon { background: rgba(59, 130, 246, 0.15); color: var(--accent-blue); }
-        .log-entry.log-success .log-icon { background: rgba(16, 185, 129, 0.15); color: var(--accent-green); }
+        .patient-info img {
+            width: 50px;
+            height: 50px;
+            border-radius: 14px;
+            object-fit: cover;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
 
-        .data-counter {
-            text-align: center;
-            margin-top: 1.5rem;
+        .patient-name {
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .patient-detail {
             font-size: 0.78rem;
-            color: var(--text-muted);
+            opacity: 0.75;
         }
 
-        .data-counter span { color: var(--accent-blue); font-weight: 600; }
-
-        @media (max-width: 1100px) { .grid-main { grid-template-columns: repeat(3, 1fr); } }
-        @media (max-width: 768px) {
-            .dashboard-container { padding: 1rem; }
-            .grid-main { grid-template-columns: repeat(2, 1fr); }
-            .grid-charts { grid-template-columns: 1fr; }
-            header { flex-direction: column; gap: 1rem; }
-            .header-right { align-items: flex-start; }
-            .card-value { font-size: 1.8rem; }
+        .patient-meta {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            font-size: 0.78rem;
         }
 
-        .value-update { animation: valueFlash 0.35s ease; }
-        @keyframes valueFlash {
-            0% { opacity: 0.6; transform: scale(0.97); }
+        .patient-meta-item {
+            background: rgba(255,255,255,0.1);
+            padding: 0.5rem 0.65rem;
+            border-radius: 8px;
+        }
+
+        .patient-meta-item .pm-label {
+            opacity: 0.6;
+            font-size: 0.68rem;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .patient-meta-item .pm-val {
+            font-weight: 700;
+            margin-top: 0.15rem;
+        }
+
+        /* Doctor Card */
+        .doctor-card {
+            background: var(--white);
+            border-radius: var(--radius);
+            padding: 1.25rem;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid #eef1f6;
+        }
+
+        .doctor-card-title {
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--text-light);
+            margin-bottom: 0.8rem;
+        }
+
+        .doctor-info {
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+        }
+
+        .doctor-info img {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            object-fit: cover;
+        }
+
+        .doctor-name {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+
+        .doctor-spec {
+            font-size: 0.78rem;
+            color: var(--text-mid);
+        }
+
+        /* System Stats */
+        .sys-card {
+            background: var(--white);
+            border-radius: var(--radius);
+            padding: 1.25rem;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid #eef1f6;
+        }
+
+        .sys-card-title {
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--text-light);
+            margin-bottom: 0.8rem;
+        }
+
+        .sys-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.4rem 0;
+            font-size: 0.8rem;
+        }
+
+        .sys-row .sys-label { color: var(--text-mid); }
+        .sys-row .sys-val { font-weight: 700; color: var(--text-dark); }
+        .sys-row .sys-val.green { color: var(--green); }
+        .sys-row .sys-val.blue { color: var(--blue); }
+
+        /* ═══════════════ FOOTER BAR ═══════════════ */
+        .footer-bar {
+            max-width: 1380px;
+            margin: 1rem auto 2rem;
+            padding: 0 2.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.78rem;
+            color: var(--text-light);
+        }
+
+        .footer-bar span.hl { color: var(--blue); font-weight: 600; }
+
+        /* ═══════════════ VALUE FLASH ANIM ═══════════════ */
+        .value-flash { animation: vflash 0.3s ease; }
+        @keyframes vflash {
+            0% { opacity: 0.5; transform: scale(0.96); }
             100% { opacity: 1; transform: scale(1); }
+        }
+
+        /* ═══════════════ RESPONSIVE ═══════════════ */
+        @media (max-width: 1100px) {
+            .dashboard-grid { grid-template-columns: 200px 1fr; }
+            .right-col { display: none; }
+        }
+
+        @media (max-width: 768px) {
+            .topbar { padding: 0 1rem; }
+            .topbar-nav { display: none; }
+            .search-box { display: none; }
+            .main-content { padding: 1rem; }
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            .vitals-col {
+                flex-direction: row;
+                flex-wrap: wrap;
+            }
+            .vital-card { flex: 1; min-width: 140px; }
+            .welcome-row { flex-direction: column; gap: 1rem; align-items: flex-start; }
+            .welcome-text h1 { font-size: 1.5rem; }
+            .right-col { display: flex; }
         }
     </style>
 </head>
 <body>
-    <div class="dashboard-container">
-        <header>
-            <div class="header-left">
-                <h1><i class="fa-solid fa-heart-pulse" style="margin-right:0.3rem;"></i> Patient Monitoring Analytics</h1>
-                <div class="subtitle">Real-time edge IoT dashboard &mdash; AI-powered fall detection &amp; vital sign monitoring</div>
+
+    <!-- ════════ TOP NAVBAR ════════ -->
+    <nav class="topbar">
+        <div class="topbar-left">
+            <a href="#" class="logo">
+                <div class="logo-icon"><i class="fa-solid fa-heart-pulse"></i></div>
+                <span class="logo-text">VitalEdge</span>
+            </a>
+            <div class="topbar-nav">
+                <a href="#" class="active">Dashboard</a>
+                <a href="#">Overview</a>
+                <a href="#">Reports</a>
+                <a href="#">Alerts</a>
+                <a href="#">Settings</a>
             </div>
-            <div class="header-right">
-                <div id="connection-status" class="status-badge connecting">
-                    <i class="fa-solid fa-spinner fa-spin"></i> Connecting to Edge Node...
+        </div>
+        <div class="topbar-right">
+            <div id="connection-status" class="conn-badge connecting">
+                <i class="fa-solid fa-spinner fa-spin"></i> Connecting...
+            </div>
+            <div class="search-box">
+                <i class="fa-solid fa-search"></i>
+                <input type="text" placeholder="Search patients, vitals..." id="search-input">
+            </div>
+            <div class="topbar-icon-btn" id="notif-btn">
+                <i class="fa-solid fa-bell"></i>
+                <span class="notification-dot" id="notif-dot" style="display:none;"></span>
+            </div>
+            <div class="user-pill">
+                <img src="/static/doctor_avatar.png" alt="Dr. Rohan Sharma">
+                <span>Dr. Rohan</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ════════ MAIN CONTENT ════════ -->
+    <div class="main-content">
+
+        <!-- Welcome Row -->
+        <div class="welcome-row">
+            <div class="welcome-text">
+                <h1>Welcome back, <span>Dr. Rohan!</span></h1>
+                <p>Real-time patient monitoring — Edge AI Vision Node</p>
+            </div>
+            <div class="welcome-meta">
+                <div class="meta-chip">
+                    <i class="fa-regular fa-calendar"></i>
+                    <span id="today-date"></span>
                 </div>
-                <div id="live-clock" class="live-clock"></div>
-            </div>
-        </header>
-
-        <div class="grid-main">
-            <div class="card" id="activity-card">
-                <div class="card-icon blue"><i class="fa-solid fa-person-walking"></i></div>
-                <div class="card-label">Activity Status</div>
-                <div class="card-value val-white" id="movement-value">Idle</div>
-                <div class="card-status" id="movement-desc"><span class="status-dot orange"></span> Waiting for data...</div>
-            </div>
-
-            <div class="card" id="hr-card">
-                <div class="card-icon red"><i class="fa-solid fa-heart-pulse"></i></div>
-                <div class="card-label">Heart Rate</div>
-                <div class="card-value val-white"><span id="hr-value">--</span><span class="card-unit">BPM</span></div>
-                <div class="card-status" id="hr-desc"><span class="status-dot orange"></span> Monitoring pulse...</div>
-            </div>
-
-            <div class="card" id="temp-card">
-                <div class="card-icon orange"><i class="fa-solid fa-temperature-half"></i></div>
-                <div class="card-label">Body Temperature</div>
-                <div class="card-value val-white"><span id="temp-value">--</span><span class="card-unit">&deg;C</span></div>
-                <div class="card-status" id="temp-desc"><span class="status-dot orange"></span> Monitoring temp...</div>
-            </div>
-
-            <div class="card" id="light-card">
-                <div class="card-icon cyan"><i class="fa-solid fa-lightbulb"></i></div>
-                <div class="card-label">Ambient Light</div>
-                <div class="card-value val-white"><span id="light-value">--</span><span class="card-unit">lux</span></div>
-                <div class="card-status" id="light-desc"><span class="status-dot orange"></span> Analyzing environment...</div>
-            </div>
-
-            <div class="card alert-card" id="alert-card">
-                <div class="card-icon green"><i class="fa-solid fa-shield-halved" id="alert-icon"></i></div>
-                <div class="card-label">Fall Detection</div>
-                <div class="card-value val-green" id="alert-value">Secure</div>
-                <div class="card-status" id="alert-desc"><span class="status-dot green"></span> Patient state normal</div>
-            </div>
-        </div>
-
-        <div class="grid-charts">
-            <div class="chart-card">
-                <h3><i class="fa-solid fa-chart-line" style="color:var(--accent-blue);"></i> Heart Rate Timeline</h3>
-                <div class="chart-container"><canvas id="hrChart"></canvas></div>
-            </div>
-            <div class="chart-card">
-                <h3><i class="fa-solid fa-chart-area" style="color:var(--accent-orange);"></i> Temperature Timeline</h3>
-                <div class="chart-container"><canvas id="tempChart"></canvas></div>
-            </div>
-        </div>
-
-        <div class="log-section">
-            <h3><i class="fa-solid fa-clock-rotate-left" style="color:var(--accent-purple);"></i> Event Log</h3>
-            <div id="log-entries" class="log-entries">
-                <div class="log-entry log-info">
-                    <span class="log-time">--:--:--</span>
-                    <span class="log-icon"><i class="fa-solid fa-power-off"></i></span>
-                    <span class="log-msg">Dashboard initialized. Waiting for edge node connection...</span>
+                <div class="meta-chip">
+                    <i class="fa-regular fa-clock"></i>
+                    <span id="live-clock"></span>
                 </div>
             </div>
         </div>
 
-        <div class="data-counter">
-            Packets Received: <span id="packet-count">0</span> &nbsp;|&nbsp;
-            Last Update: <span id="last-update">--</span> &nbsp;|&nbsp;
-            Source: <span>Edge Vision AI (Local WebSocket)</span>
-        </div>
+        <!-- 3-Column Dashboard -->
+        <div class="dashboard-grid">
+
+            <!-- ═══ LEFT: VITAL CARDS ═══ -->
+            <div class="vitals-col">
+                <div class="vital-card" id="hr-card">
+                    <div class="vital-card-header">
+                        <div class="vital-icon heart"><i class="fa-solid fa-heart-pulse"></i></div>
+                        <span class="vital-menu"><i class="fa-solid fa-ellipsis"></i></span>
+                    </div>
+                    <div class="vital-label">Heart Rate</div>
+                    <div class="vital-value" id="hr-value">--<span class="vital-unit"> BPM</span></div>
+                    <div class="vital-badge good" id="hr-badge"><i class="fa-solid fa-circle-check"></i> Good</div>
+                </div>
+
+                <div class="vital-card" id="temp-card">
+                    <div class="vital-card-header">
+                        <div class="vital-icon temp"><i class="fa-solid fa-temperature-half"></i></div>
+                        <span class="vital-menu"><i class="fa-solid fa-ellipsis"></i></span>
+                    </div>
+                    <div class="vital-label">Body Temperature</div>
+                    <div class="vital-value" id="temp-value">--<span class="vital-unit"> °C</span></div>
+                    <div class="vital-badge good" id="temp-badge"><i class="fa-solid fa-circle-check"></i> Normal</div>
+                </div>
+
+                <div class="vital-card" id="light-card">
+                    <div class="vital-card-header">
+                        <div class="vital-icon light"><i class="fa-solid fa-lightbulb"></i></div>
+                        <span class="vital-menu"><i class="fa-solid fa-ellipsis"></i></span>
+                    </div>
+                    <div class="vital-label">Ambient Light</div>
+                    <div class="vital-value" id="light-value">--<span class="vital-unit"> lux</span></div>
+                    <div class="vital-badge info" id="light-badge"><i class="fa-solid fa-sun"></i> Measuring</div>
+                </div>
+
+                <div class="vital-card" id="activity-card">
+                    <div class="vital-card-header">
+                        <div class="vital-icon activity"><i class="fa-solid fa-person-walking"></i></div>
+                        <span class="vital-menu"><i class="fa-solid fa-ellipsis"></i></span>
+                    </div>
+                    <div class="vital-label">Activity Status</div>
+                    <div class="vital-value" id="movement-value" style="font-size:1.4rem;">Idle</div>
+                    <div class="vital-badge info" id="movement-badge"><i class="fa-solid fa-bed"></i> Resting</div>
+                </div>
+            </div>
+
+            <!-- ═══ CENTER: CHARTS & FEED ═══ -->
+            <div class="center-col">
+
+                <!-- Heart Rate Chart -->
+                <div class="chart-panel">
+                    <div class="chart-panel-header">
+                        <h3><i class="fa-solid fa-chart-line" style="color: var(--blue); margin-right:0.3rem;"></i> Vitals — Real-time Trend</h3>
+                        <div class="chart-tabs">
+                            <button class="chart-tab active" onclick="showChart('hr')">Heart Rate</button>
+                            <button class="chart-tab" onclick="showChart('temp')">Temperature</button>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="mainChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Cardiovascular Summary -->
+                <div class="cardio-section">
+                    <div class="cardio-header">
+                        <h3><i class="fa-solid fa-wave-square" style="color:var(--red);"></i> Cardiovascular System</h3>
+                        <div class="vital-badge good" id="cardio-badge" style="margin:0;">
+                            <i class="fa-solid fa-circle-check"></i> Stable
+                        </div>
+                    </div>
+                    <div class="cardio-body">
+                        <div class="cardio-text" id="cardio-desc">
+                            Edge AI vision node is actively monitoring patient vitals via the camera feed. Heart rate is derived from PPG simulation. Posture analysis running via OpenCV contour detection. All systems operational.
+                        </div>
+                        <div class="cardio-bpm">
+                            <div class="bpm-value" id="bpm-big">--</div>
+                            <div class="bpm-change" id="bpm-change" style="color:var(--green);">↑ stable</div>
+                            <div class="bpm-label">average bpm</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Event Feed -->
+                <div class="event-feed">
+                    <h3><i class="fa-solid fa-rss" style="color:var(--purple);"></i> Alert Feed</h3>
+                    <div class="event-list" id="event-list">
+                        <div class="event-item">
+                            <div class="event-dot info-dot"></div>
+                            <div class="event-content">
+                                <div class="event-msg">Dashboard initialized. Waiting for edge node...</div>
+                                <div class="event-time">System</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ RIGHT: PATIENT & DOCTOR ═══ -->
+            <div class="right-col">
+
+                <!-- Fall Detection -->
+                <div class="fall-card" id="fall-card">
+                    <div class="fall-shield safe" id="fall-shield">
+                        <i class="fa-solid fa-shield-halved" id="fall-icon"></i>
+                    </div>
+                    <div class="fall-status" id="fall-status" style="color: var(--green);">NORMAL</div>
+                    <div class="fall-sub" id="fall-sub">via OpenCV · no fall detected</div>
+                </div>
+
+                <!-- Patient Info -->
+                <div class="patient-card">
+                    <div class="patient-card-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                        <span style="font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; opacity: 0.7;">Active Patient</span>
+                        <select id="patient-select" onchange="changePatient()" style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); color:white; border-radius:6px; padding:3px 6px; font-size:0.75rem; outline:none; cursor:pointer;">
+                            <option value="arjun" style="color:black;">Arjun Mehta</option>
+                            <option value="priya" style="color:black;">Priya Sharma</option>
+                            <option value="ravi" style="color:black;">Ravi Kulkarni</option>
+                        </select>
+                    </div>
+                    <div class="patient-info">
+                        <img src="/static/patient_avatar.png" alt="Patient Avatar" id="pat-img">
+                        <div>
+                            <div class="patient-name" id="pat-name">Arjun Mehta</div>
+                            <div class="patient-detail" id="pat-detail">M · 52y · Room 4A</div>
+                        </div>
+                    </div>
+                    <div class="patient-meta">
+                        <div class="patient-meta-item">
+                            <div class="pm-label">Patient ID</div>
+                            <div class="pm-val" id="pat-id">RPM-0001</div>
+                        </div>
+                        <div class="patient-meta-item">
+                            <div class="pm-label">Device</div>
+                            <div class="pm-val">Edge Cam</div>
+                        </div>
+                        <div class="patient-meta-item">
+                            <div class="pm-label">Admitted</div>
+                            <div class="pm-val" id="pat-adm">02 Apr</div>
+                        </div>
+                        <div class="patient-meta-item">
+                            <div class="pm-label">Blood</div>
+                            <div class="pm-val" id="pat-blood">B+</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Doctor Info -->
+                <div class="doctor-card">
+                    <div class="doctor-card-title">Attending Physician</div>
+                    <div class="doctor-info">
+                        <img src="/static/doctor_avatar.png" alt="Dr. Rohan Sharma">
+                        <div>
+                            <div class="doctor-name">Dr. Rohan Sharma</div>
+                            <div class="doctor-spec">General Medicine</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- System Stats -->
+                <div class="sys-card">
+                    <div class="sys-card-title">System Stats</div>
+                    <div class="sys-row">
+                        <span class="sys-label">Inference</span>
+                        <span class="sys-val green">~10 ms</span>
+                    </div>
+                    <div class="sys-row">
+                        <span class="sys-label">Transport</span>
+                        <span class="sys-val blue">WebSocket</span>
+                    </div>
+                    <div class="sys-row">
+                        <span class="sys-label">Packets</span>
+                        <span class="sys-val green" id="packet-count-sys">0</span>
+                    </div>
+                </div>
+
+                <!-- Simulation Controls (NEW) -->
+                <div class="sys-card" style="padding:1rem;">
+                    <div class="sys-card-title" style="margin-bottom:0.6rem;"><i class="fa-solid fa-flask" style="color:var(--blue); margin-right:4px;"></i> Device overrides target="node"</div>
+                    <div class="sim-buttons" style="display:flex; flex-direction:column; gap:0.4rem;">
+                        <button class="sim-btn" id="sim-fall-btn" onclick="toggleSim('fall')" style="background:var(--red-light); color:var(--red); border:none; border-radius:8px; padding:0.5rem; cursor:pointer; font-weight:600; width:100%; transition:all 0.2s; display:flex; justify-content:center; gap:6px; align-items:center;">
+                            <i class="fa-solid fa-person-falling"></i> Trigger Fall
+                        </button>
+                        <button class="sim-btn" id="sim-hr-btn" onclick="toggleSim('high_hr')" style="background:var(--orange-light); color:var(--orange); border:none; border-radius:8px; padding:0.5rem; cursor:pointer; font-weight:600; width:100%; transition:all 0.2s; display:flex; justify-content:center; gap:6px; align-items:center;">
+                            <i class="fa-solid fa-heart-pulse"></i> High Heart Rate
+                        </button>
+                        <button class="sim-btn" id="sim-temp-btn" onclick="toggleSim('high_temp')" style="background:var(--cyan-light); color:var(--cyan); border:none; border-radius:8px; padding:0.5rem; cursor:pointer; font-weight:600; width:100%; transition:all 0.2s; display:flex; justify-content:center; gap:6px; align-items:center;">
+                            <i class="fa-solid fa-temperature-arrow-up"></i> Spike Temp
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- end dashboard-grid -->
+    </div><!-- end main-content -->
+
+    <!-- Footer -->
+    <div class="footer-bar">
+        <span>Packets: <span class="hl" id="packet-count">0</span> &nbsp;|&nbsp; Last update: <span class="hl" id="last-update">--</span></span>
+        <span>Source: <span class="hl">Edge Vision AI</span> &nbsp;·&nbsp; VitalEdge IoT Dashboard</span>
     </div>
 
-    <script>
-        // ========== SOCKET.IO CONNECTION ==========
-        const socket = io();
-        const connStatus = document.getElementById("connection-status");
 
-        // ========== STATE ==========
+    <!-- ═══════════════ JAVASCRIPT ═══════════════ -->
+    <script>
+        // ============ SOCKET ============
+        const socket = io();
+        const connEl = document.getElementById('connection-status');
+
+        // ============ STATE ============
         let packetCount = 0;
         let lastAlertState = 0;
-        const MAX_POINTS = 50;
-        const hrData = [];
-        const tempData = [];
-        const chartLabels = [];
+        const MAX_PTS = 50;
+        const hrData = [], tempData = [], labels = [];
+        let activeChart = 'hr';
+        let hrSum = 0, hrCount = 0;
 
-        // ========== UI REFS ==========
-        const moveValue = document.getElementById("movement-value");
-        const moveDesc = document.getElementById("movement-desc");
-        const lightValue = document.getElementById("light-value");
-        const lightDesc = document.getElementById("light-desc");
-        const tempValue = document.getElementById("temp-value");
-        const tempDesc = document.getElementById("temp-desc");
-        const hrValue = document.getElementById("hr-value");
-        const hrDesc = document.getElementById("hr-desc");
-        const alertValue = document.getElementById("alert-value");
-        const alertCard = document.getElementById("alert-card");
-        const alertDesc = document.getElementById("alert-desc");
-        const alertIcon = document.getElementById("alert-icon");
-        const logEntries = document.getElementById("log-entries");
-        const packetCounter = document.getElementById("packet-count");
-        const lastUpdateEl = document.getElementById("last-update");
+        // ============ UI REFS ============
+        const hrVal = document.getElementById('hr-value');
+        const hrBadge = document.getElementById('hr-badge');
+        const tempVal = document.getElementById('temp-value');
+        const tempBadge = document.getElementById('temp-badge');
+        const lightVal = document.getElementById('light-value');
+        const lightBadge = document.getElementById('light-badge');
+        const moveVal = document.getElementById('movement-value');
+        const moveBadge = document.getElementById('movement-badge');
+        const fallCard = document.getElementById('fall-card');
+        const fallShield = document.getElementById('fall-shield');
+        const fallIcon = document.getElementById('fall-icon');
+        const fallStatus = document.getElementById('fall-status');
+        const fallSub = document.getElementById('fall-sub');
+        const bpmBig = document.getElementById('bpm-big');
+        const bpmChange = document.getElementById('bpm-change');
+        const cardioBadge = document.getElementById('cardio-badge');
+        const eventList = document.getElementById('event-list');
+        const packetEl = document.getElementById('packet-count');
+        const packetSysEl = document.getElementById('packet-count-sys');
+        const lastUpEl = document.getElementById('last-update');
+        const notifDot = document.getElementById('notif-dot');
 
-        // ========== CLOCK ==========
-        function tick() {
-            document.getElementById("live-clock").textContent =
-                new Date().toLocaleTimeString('en-US', { hour12: true });
+        // ============ CLOCK ============
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('live-clock').textContent = now.toLocaleTimeString('en-IN', { hour12: true });
+            document.getElementById('today-date').textContent = now.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
         }
-        setInterval(tick, 1000);
-        tick();
+        setInterval(updateClock, 1000);
+        updateClock();
 
-        // ========== CHARTS ==========
-        const chartOpts = {
+        // ============ CHART ============
+        const chartCfg = {
             responsive: true,
             maintainAspectRatio: false,
-            animation: { duration: 250 },
-            plugins: { legend: { display: false } },
+            animation: { duration: 200 },
+            plugins: { legend: { display: false }, tooltip: { backgroundColor: '#1a1d2e', titleFont: { family: 'Inter' }, bodyFont: { family: 'Inter' }, cornerRadius: 8, padding: 10 } },
             scales: {
-                x: {
-                    display: true,
-                    grid: { color: 'rgba(255,255,255,0.03)' },
-                    ticks: { color: '#4a5578', font: { size: 10 }, maxRotation: 0, maxTicksLimit: 8 }
-                },
-                y: {
-                    grid: { color: 'rgba(255,255,255,0.03)' },
-                    ticks: { color: '#4a5578', font: { size: 10 } }
-                }
+                x: { grid: { color: '#f0f1f5' }, ticks: { color: '#9ca3bd', font: { size: 10, family: 'Inter' }, maxRotation: 0, maxTicksLimit: 8 } },
+                y: { grid: { color: '#f0f1f5' }, ticks: { color: '#9ca3bd', font: { size: 10, family: 'Inter' } } }
             },
-            elements: { point: { radius: 2, hoverRadius: 5 }, line: { tension: 0.35 } }
+            elements: { point: { radius: 2, hoverRadius: 5 }, line: { tension: 0.4, borderWidth: 2.5 } }
         };
 
-        const hrChart = new Chart(document.getElementById('hrChart'), {
+        const mainChart = new Chart(document.getElementById('mainChart'), {
             type: 'line',
             data: {
-                labels: chartLabels,
+                labels: labels,
                 datasets: [{
                     data: hrData,
-                    borderColor: '#3b82f6',
-                    backgroundColor: 'rgba(59, 130, 246, 0.08)',
+                    borderColor: '#2563eb',
+                    backgroundColor: 'rgba(37, 99, 235, 0.06)',
                     fill: true,
-                    borderWidth: 2
+                    pointBackgroundColor: '#2563eb'
                 }]
             },
-            options: { ...chartOpts, scales: { ...chartOpts.scales, y: { ...chartOpts.scales.y, suggestedMin: 55, suggestedMax: 170 } } }
+            options: { ...chartCfg, scales: { ...chartCfg.scales, y: { ...chartCfg.scales.y, suggestedMin: 55, suggestedMax: 170 } } }
         });
 
-        const tempChart = new Chart(document.getElementById('tempChart'), {
-            type: 'line',
-            data: {
-                labels: chartLabels,
-                datasets: [{
-                    data: tempData,
-                    borderColor: '#f59e0b',
-                    backgroundColor: 'rgba(245, 158, 11, 0.08)',
-                    fill: true,
-                    borderWidth: 2
-                }]
-            },
-            options: { ...chartOpts, scales: { ...chartOpts.scales, y: { ...chartOpts.scales.y, suggestedMin: 35.5, suggestedMax: 39 } } }
-        });
-
-        // ========== LOGGING ==========
-        function addLog(msg, type = 'info') {
-            const now = new Date().toLocaleTimeString('en-US', { hour12: false });
-            const icons = { 'info': 'fa-circle-info', 'success': 'fa-circle-check', 'alert': 'fa-triangle-exclamation' };
-            const el = document.createElement('div');
-            el.className = `log-entry log-${type}`;
-            el.innerHTML = `<span class="log-time">${now}</span><span class="log-icon"><i class="fa-solid ${icons[type]}"></i></span><span class="log-msg">${msg}</span>`;
-            logEntries.insertBefore(el, logEntries.firstChild);
-            while (logEntries.children.length > 30) logEntries.removeChild(logEntries.lastChild);
+        function showChart(type) {
+            activeChart = type;
+            document.querySelectorAll('.chart-tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            if (type === 'hr') {
+                mainChart.data.datasets[0].data = hrData;
+                mainChart.data.datasets[0].borderColor = '#2563eb';
+                mainChart.data.datasets[0].backgroundColor = 'rgba(37, 99, 235, 0.06)';
+                mainChart.data.datasets[0].pointBackgroundColor = '#2563eb';
+                mainChart.options.scales.y.suggestedMin = 55;
+                mainChart.options.scales.y.suggestedMax = 170;
+            } else {
+                mainChart.data.datasets[0].data = tempData;
+                mainChart.data.datasets[0].borderColor = '#ea580c';
+                mainChart.data.datasets[0].backgroundColor = 'rgba(234, 88, 12, 0.06)';
+                mainChart.data.datasets[0].pointBackgroundColor = '#ea580c';
+                mainChart.options.scales.y.suggestedMin = 35.5;
+                mainChart.options.scales.y.suggestedMax = 39.5;
+            }
+            mainChart.update();
         }
 
-        // ========== SOCKET EVENTS ==========
+        // ============ EVENT LOG ============
+        function addEvent(msg, type = 'info') {
+            const now = new Date().toLocaleTimeString('en-IN', { hour12: false });
+            const dotClass = type === 'alert' ? 'alert-dot' : type === 'success' ? 'success-dot' : 'info-dot';
+            const el = document.createElement('div');
+            el.className = 'event-item';
+            el.innerHTML = `<div class="event-dot ${dotClass}"></div><div class="event-content"><div class="event-msg">${msg}</div><div class="event-time">${now}</div></div>`;
+            eventList.insertBefore(el, eventList.firstChild);
+            while (eventList.children.length > 25) eventList.removeChild(eventList.lastChild);
+        }
+
+        // ============ SIMULATION & PATIENT ============
+        const simStates = { fall: false, high_hr: false, high_temp: false };
+        function toggleSim(type) {
+            simStates[type] = !simStates[type];
+            fetch('/api/simulate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ [type]: simStates[type] })
+            });
+
+            const btn = document.getElementById(
+                type === 'fall' ? 'sim-fall-btn' :
+                type === 'high_hr' ? 'sim-hr-btn' : 'sim-temp-btn'
+            );
+            if (simStates[type]) {
+                btn.style.boxShadow = 'inset 0 0 0 2px currentColor';
+            } else {
+                btn.style.boxShadow = 'none';
+            }
+        }
+
+        let currPatientKey = 'arjun';
+        const patData = {
+            arjun: { name: 'Arjun Mehta', detail: 'M · 52y · Room 4A', id: 'RPM-0001', adm: '02 Apr', blood: 'B+', img: '/static/patient_avatar.png', hrOff: 0, tempOff: 0 },
+            priya: { name: 'Priya Sharma', detail: 'F · 38y · Room 2B', id: 'RPM-0002', adm: '04 Apr', blood: 'A-', img: '/static/priya_avatar.png', hrOff: 14, tempOff: 0.5 },
+            ravi: { name: 'Ravi Kulkarni', detail: 'M · 67y · Room 6C', id: 'RPM-0003', adm: '28 Mar', blood: 'O+', img: '/static/ravi_avatar.png', hrOff: -8, tempOff: -0.3 }
+        };
+        function changePatient() {
+            const val = document.getElementById('patient-select').value;
+            currPatientKey = val;
+            const p = patData[val];
+            document.getElementById('pat-img').src = p.img;
+            document.getElementById('pat-name').textContent = p.name;
+            document.getElementById('pat-detail').textContent = p.detail;
+            document.getElementById('pat-id').textContent = p.id;
+            document.getElementById('pat-adm').textContent = p.adm;
+            document.getElementById('pat-blood').textContent = p.blood;
+            // Clear chart data for new patient
+            hrData.length = 0; tempData.length = 0; labels.length = 0; mainChart.update();
+            addEvent(`Context switched to patient: ${p.name}`, 'info');
+        }
+
+        // ============ FLASH HELPER ============
+        function flash(el) {
+            el.classList.remove('value-flash');
+            void el.offsetWidth;
+            el.classList.add('value-flash');
+        }
+
+        // ============ SOCKET EVENTS ============
         socket.on('connect', () => {
-            connStatus.innerHTML = '<i class="fa-solid fa-wifi"></i> Edge Node Connected (Live)';
-            connStatus.className = 'status-badge connected';
-            addLog('Connected to edge node via local WebSocket', 'success');
+            connEl.innerHTML = '<i class="fa-solid fa-wifi"></i> Live Connected';
+            connEl.className = 'conn-badge connected';
+            addEvent('Edge node connected via local WebSocket', 'success');
         });
 
         socket.on('disconnect', () => {
-            connStatus.innerHTML = '<i class="fa-solid fa-link-slash"></i> Disconnected';
-            connStatus.className = 'status-badge disconnected';
-            addLog('Connection lost to edge node', 'alert');
+            connEl.innerHTML = '<i class="fa-solid fa-link-slash"></i> Disconnected';
+            connEl.className = 'conn-badge disconnected';
+            addEvent('Connection lost to edge node', 'alert');
         });
 
-        socket.on('patient_data', (data) => {
+        socket.on('patient_data', (d) => {
+            // Apply physiological offsets based on the selected patient
+            const p = patData[currPatientKey];
+            if (d.heartRate !== undefined && !simStates.high_hr) d.heartRate += p.hrOff;
+            if (d.temperature !== undefined && !simStates.high_temp) d.temperature = parseFloat((d.temperature + p.tempOff).toFixed(1));
+
             packetCount++;
-            packetCounter.textContent = packetCount;
+            packetEl.textContent = packetCount;
+            packetSysEl.textContent = packetCount;
             const now = new Date();
-            lastUpdateEl.textContent = now.toLocaleTimeString('en-US', { hour12: false });
-            const label = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            lastUpEl.textContent = now.toLocaleTimeString('en-IN', { hour12: false });
+            const lbl = now.toLocaleTimeString('en-IN', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
-            // Activity
-            if (data.movement === 1) {
-                moveValue.textContent = "Active";
-                moveValue.className = "card-value val-green";
-                moveDesc.innerHTML = '<span class="status-dot green"></span> Movement detected';
-            } else {
-                moveValue.textContent = "Idle";
-                moveValue.className = "card-value val-white";
-                moveDesc.innerHTML = '<span class="status-dot green"></span> Patient resting';
-            }
+            // === Heart Rate ===
+            if (d.heartRate !== undefined) {
+                hrVal.innerHTML = d.heartRate + '<span class="vital-unit"> BPM</span>';
+                flash(hrVal);
+                hrSum += d.heartRate; hrCount++;
+                bpmBig.textContent = d.heartRate;
+                flash(bpmBig);
 
-            // Light
-            lightValue.textContent = data.light;
-            if (data.light > 2000) lightDesc.innerHTML = '<span class="status-dot green"></span> Brightly lit';
-            else if (data.light > 800) lightDesc.innerHTML = '<span class="status-dot green"></span> Moderate light';
-            else lightDesc.innerHTML = '<span class="status-dot green"></span> Dim — good for rest';
-
-            // Temperature
-            if (data.temperature !== undefined) {
-                tempValue.textContent = data.temperature.toFixed(1);
-                if (data.temperature > 37.5) {
-                    document.querySelector('#temp-card .card-value').className = 'card-value val-red';
-                    tempDesc.innerHTML = '<span class="status-dot red"></span> Elevated temperature!';
-                } else if (data.temperature < 35.5) {
-                    document.querySelector('#temp-card .card-value').className = 'card-value val-orange';
-                    tempDesc.innerHTML = '<span class="status-dot orange"></span> Low temperature';
+                if (d.heartRate > 100) {
+                    hrBadge.className = 'vital-badge alert';
+                    hrBadge.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Elevated';
+                    cardioBadge.className = 'vital-badge alert';
+                    cardioBadge.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Elevated';
+                    bpmChange.style.color = 'var(--red)';
+                    bpmChange.textContent = '↑ elevated';
+                } else if (d.heartRate < 60) {
+                    hrBadge.className = 'vital-badge warning';
+                    hrBadge.innerHTML = '<i class="fa-solid fa-arrow-down"></i> Low';
+                    cardioBadge.className = 'vital-badge warning';
+                    cardioBadge.innerHTML = '<i class="fa-solid fa-arrow-down"></i> Low';
+                    bpmChange.style.color = 'var(--orange)';
+                    bpmChange.textContent = '↓ low';
                 } else {
-                    document.querySelector('#temp-card .card-value').className = 'card-value val-green';
-                    tempDesc.innerHTML = '<span class="status-dot green"></span> Normal body temp';
+                    hrBadge.className = 'vital-badge good';
+                    hrBadge.innerHTML = '<i class="fa-solid fa-circle-check"></i> Good';
+                    cardioBadge.className = 'vital-badge good';
+                    cardioBadge.innerHTML = '<i class="fa-solid fa-circle-check"></i> Stable';
+                    bpmChange.style.color = 'var(--green)';
+                    bpmChange.textContent = '↑ stable';
                 }
-                tempData.push(data.temperature);
+                hrData.push(d.heartRate);
             }
 
-            // Heart Rate
-            if (data.heartRate !== undefined) {
-                hrValue.textContent = data.heartRate;
-                if (data.heartRate > 100) {
-                    document.querySelector('#hr-card .card-value').className = 'card-value val-red';
-                    hrDesc.innerHTML = '<span class="status-dot red"></span> Elevated pulse!';
-                } else if (data.heartRate < 60) {
-                    document.querySelector('#hr-card .card-value').className = 'card-value val-orange';
-                    hrDesc.innerHTML = '<span class="status-dot orange"></span> Low pulse';
+            // === Temperature ===
+            if (d.temperature !== undefined) {
+                tempVal.innerHTML = d.temperature.toFixed(1) + '<span class="vital-unit"> °C</span>';
+                flash(tempVal);
+                if (d.temperature > 37.5) {
+                    tempBadge.className = 'vital-badge alert';
+                    tempBadge.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Fever';
+                } else if (d.temperature < 35.5) {
+                    tempBadge.className = 'vital-badge warning';
+                    tempBadge.innerHTML = '<i class="fa-solid fa-arrow-down"></i> Low';
                 } else {
-                    document.querySelector('#hr-card .card-value').className = 'card-value val-green';
-                    hrDesc.innerHTML = '<span class="status-dot green"></span> Healthy resting pulse';
+                    tempBadge.className = 'vital-badge good';
+                    tempBadge.innerHTML = '<i class="fa-solid fa-circle-check"></i> Normal';
                 }
-                hrData.push(data.heartRate);
+                tempData.push(d.temperature);
             }
 
-            // Charts
-            chartLabels.push(label);
-            if (chartLabels.length > MAX_POINTS) { chartLabels.shift(); hrData.shift(); tempData.shift(); }
-            hrChart.update('active');
-            tempChart.update('active');
-
-            // Alert
-            if (data.alert === 1) {
-                alertValue.textContent = "FALL DETECTED";
-                alertValue.className = "card-value val-red";
-                alertCard.classList.add("critical");
-                alertCard.querySelector('.card-icon').className = 'card-icon red';
-                alertIcon.className = 'fa-solid fa-triangle-exclamation';
-                alertDesc.innerHTML = '<span class="status-dot red"></span> Immediate attention required!';
-                if (lastAlertState !== 1) addLog('⚠️ CRITICAL: Fall detected by edge AI vision!', 'alert');
+            // === Light ===
+            lightVal.innerHTML = d.light + '<span class="vital-unit"> lux</span>';
+            flash(lightVal);
+            if (d.light > 2000) {
+                lightBadge.className = 'vital-badge good';
+                lightBadge.innerHTML = '<i class="fa-solid fa-sun"></i> Bright';
+            } else if (d.light > 800) {
+                lightBadge.className = 'vital-badge info';
+                lightBadge.innerHTML = '<i class="fa-solid fa-cloud-sun"></i> Moderate';
             } else {
-                alertValue.textContent = "Secure";
-                alertValue.className = "card-value val-green";
-                alertCard.classList.remove("critical");
-                alertCard.querySelector('.card-icon').className = 'card-icon green';
-                alertIcon.className = 'fa-solid fa-shield-halved';
-                alertDesc.innerHTML = '<span class="status-dot green"></span> Patient state normal';
-                if (lastAlertState === 1) addLog('✓ Alert cleared — patient recovered', 'success');
+                lightBadge.className = 'vital-badge warning';
+                lightBadge.innerHTML = '<i class="fa-solid fa-moon"></i> Dim';
             }
-            lastAlertState = data.alert;
 
-            // Flash
-            document.querySelectorAll('.card-value').forEach(el => {
-                el.classList.remove('value-update');
-                void el.offsetWidth;
-                el.classList.add('value-update');
-            });
+            // === Activity ===
+            if (d.movement === 1) {
+                moveVal.textContent = 'Active';
+                moveVal.style.color = 'var(--green)';
+                moveBadge.className = 'vital-badge good';
+                moveBadge.innerHTML = '<i class="fa-solid fa-person-walking"></i> Moving';
+            } else {
+                moveVal.textContent = 'Idle';
+                moveVal.style.color = 'var(--text-dark)';
+                moveBadge.className = 'vital-badge info';
+                moveBadge.innerHTML = '<i class="fa-solid fa-bed"></i> Resting';
+            }
+            flash(moveVal);
+
+            // === Charts ===
+            labels.push(lbl);
+            if (labels.length > MAX_PTS) { labels.shift(); hrData.shift(); tempData.shift(); }
+            mainChart.update('active');
+
+            // === Fall Detection ===
+            if (d.alert === 1) {
+                fallCard.classList.add('critical');
+                fallShield.className = 'fall-shield danger';
+                fallIcon.className = 'fa-solid fa-triangle-exclamation';
+                fallStatus.textContent = 'FALL DETECTED';
+                fallStatus.style.color = 'var(--red)';
+                fallSub.textContent = 'Immediate attention required!';
+                notifDot.style.display = 'block';
+                if (lastAlertState !== 1) addEvent('⚠️ CRITICAL: Fall detected by edge AI!', 'alert');
+            } else {
+                fallCard.classList.remove('critical');
+                fallShield.className = 'fall-shield safe';
+                fallIcon.className = 'fa-solid fa-shield-halved';
+                fallStatus.textContent = 'NORMAL';
+                fallStatus.style.color = 'var(--green)';
+                fallSub.textContent = 'via OpenCV · no fall detected';
+                notifDot.style.display = 'none';
+                if (lastAlertState === 1) addEvent('✓ Alert cleared — patient recovered', 'success');
+            }
+            lastAlertState = d.alert;
         });
     </script>
 </body>
